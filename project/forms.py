@@ -91,11 +91,10 @@ class TaskForm(ModelForm):
 class QuickTaskForm(ModelForm):
     class Meta:
         model = Task
-        fields = ["title", "task_managers", "project", "stage", "end_date"]
+        fields = ["title", "task_managers", "project", "stage"]
         widgets = {
             "project": forms.HiddenInput(),
             "stage": forms.HiddenInput(),
-            "end_date": forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):

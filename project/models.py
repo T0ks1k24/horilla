@@ -71,11 +71,6 @@ class Project(HorillaModel):
     status = models.CharField(
         choices=PROJECT_STATUS, max_length=250, default="new", verbose_name=_("Status")
     )
-    start_date = models.DateField(verbose_name=_("Start Date"))
-    end_date = models.DateField(null=True, blank=True, verbose_name=_("End Date"))
-    document = models.FileField(
-        upload_to=upload_path, blank=True, null=True, verbose_name=_("Project File")
-    )
     description = models.TextField(verbose_name=_("Description"))
     company_id = models.ForeignKey(
         Company, null=True, editable=False, on_delete=models.PROTECT
@@ -85,9 +80,6 @@ class Project(HorillaModel):
     def get_description(self, length=50):
         """
         Returns a truncated version of the description attribute.
-
-        Parameters:
-        length (int): The maximum length of the returned description.
         """
         return (
             self.description
@@ -123,17 +115,6 @@ class Project(HorillaModel):
         """
         url = f"https://ui-avatars.com/api/?name={self.title}&background=random"
         return url
-
-    def get_document_html(self):
-        if self.document:
-            document_url = self.document.url
-            return format_html(
-                '<a href="{0}" style="text-decoration: none" rel="noopener noreferrer" class="oh-btn oh-btn--light" target="_blank" onclick="event.stopPropagation();">'
-                '<span class="oh-file-icon oh-file-icon--pdf"></span>'
-                "&nbsp View"
-                "</a>",
-                document_url,
-            )
 
     def redirect(self):
         """
@@ -216,7 +197,6 @@ class Project(HorillaModel):
         """
         This method for get custom column for action.
         """
-
         return render_template(
             path="cbv/projects/actions.html",
             context={"instance": self},
@@ -231,25 +211,27 @@ class Project(HorillaModel):
         else:
             return "Un-Archive"
 
-    def clean(self) -> None:
-        # validating end date
-        if self.end_date is not None:
-            if self.end_date < self.start_date:
-                raise ValidationError({"document": "End date is less than start date"})
-            if self.end_date < date.today():
-                self.status = "expired"
-
     def save(self, *args, **kwargs):
         is_new, request = self.pk is None, getattr(
             horilla_middlewares._thread_locals, "request", None
         )
+
         if is_new and (cid := request.session.get("selected_company")) and cid != "all":
             self.company_id = Company.find(cid)
+
         super().save(*args, **kwargs)
+
         if is_new:
-            ProjectStage.objects.create(
-                title="Todo", project=self, sequence=1, is_end_stage=False
-            )
+            stages = [
+                ("Task", 1),
+                ("Epic", 2),
+                ("Bug", 3),
+            ]
+
+            for title, seq in stages:
+                ProjectStage.objects.create(
+                    title=title, project=self, sequence=seq, is_end_stage=False
+                )
 
     def __str__(self):
         return self.title
@@ -336,10 +318,11 @@ class Task(HorillaModel):
     """
 
     TASK_STATUS = [
+        ("ongoing", _("Ongoing")),
         ("to_do", _("To Do")),
         ("in_progress", _("In Progress")),
-        ("completed", _("Completed")),
-        ("expired", _("Expired")),
+        ("code_review", _("Code Review")),
+        ("completed", _("Done & Will not do")),
     ]
     title = models.CharField(max_length=200, verbose_name=_("Title"))
     project = models.ForeignKey(
@@ -363,36 +346,16 @@ class Task(HorillaModel):
     status = models.CharField(
         choices=TASK_STATUS, max_length=250, default="to_do", verbose_name=_("Status")
     )
-    start_date = models.DateField(null=True, blank=True, verbose_name=_("Start Date"))
-    end_date = models.DateField(null=True, blank=True, verbose_name=_("End Date"))
-    document = models.FileField(
-        upload_to=upload_path, blank=True, null=True, verbose_name=_("Task File")
-    )
     description = models.TextField(verbose_name=_("Description"))
     sequence = models.IntegerField(default=0)
     objects = HorillaCompanyManager("project__company_id")
-
-    def clean(self) -> None:
-        if self.end_date is not None and self.project.end_date is not None:
-            if (
-                self.project.end_date < self.end_date
-                or self.project.start_date > self.end_date
-            ):
-                raise ValidationError(
-                    {
-                        "end_date": _(
-                            "The task end date must be between the project's start and end dates."
-                        )
-                    }
-                )
-        if self.end_date < date.today():
-            self.status = "expired"
 
     class Meta:
         """
         Meta class to add the additional info
         """
 
+        ordering = ["created_at"]
         unique_together = ["project", "title"]
         verbose_name = _("Task")
         verbose_name_plural = _("Tasks")
@@ -478,16 +441,6 @@ class Task(HorillaModel):
         """
         url = f"https://ui-avatars.com/api/?name={self.title}&background=random"
         return url
-
-    def document_col(self):
-        """
-        This method for get custom document coloumn .
-        """
-
-        return render_template(
-            path="cbv/tasks/task_document.html",
-            context={"instance": self},
-        )
 
     def detail_view_actions(self):
         """

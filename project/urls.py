@@ -118,6 +118,7 @@ urlpatterns = [
     #     views.create_timesheet_task,
     #     name="create-timesheet-task",
     # ),
+    path("task-all-board/", tasks.BoardTemplateView.as_view(), name="view-task-board"),
     path(
         "update-timesheet-task/<int:timesheet_id>/",
         views.update_timesheet_task,

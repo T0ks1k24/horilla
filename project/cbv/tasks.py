@@ -36,6 +36,16 @@ from project.templatetags.taskfilters import task_crud_perm
 logger = logging.getLogger(__name__)
 
 
+NEW_TASK_STATUS = [
+    ("to_do", _("To Do")),
+    ("in_progress", _("In Progress")),
+    ("code_review", _("Code Review")),
+    ("testing", _("Testing")),
+    ("done", _("Done")),
+    ("archived", _("Archived")),
+]
+
+
 @method_decorator(login_required, name="dispatch")
 class TasksTemplateView(TemplateView):
     """
@@ -43,6 +53,53 @@ class TasksTemplateView(TemplateView):
     """
 
     template_name = "cbv/tasks/task_template_view.html"
+
+
+@method_decorator(login_required, name="dispatch")
+class BoardTemplateView(TemplateView):
+    template_name = "cbv/tasks/board_template_view.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        if not hasattr(self.request.user, "employee_get"):
+            return context
+
+        employee = self.request.user.employee_get
+
+        allowed_projects = Project.objects.filter(
+            Q(managers=employee) | Q(members=employee)
+        ).distinct()
+
+        context["projects"] = allowed_projects
+        project_id = self.request.GET.get("project_id")
+
+        if project_id:
+            self.request.session["last_board_project_id"] = project_id
+        else:
+            project_id = self.request.session.get("last_board_project_id")
+
+        selected_project = None
+
+        if project_id:
+            try:
+                selected_project = allowed_projects.filter(id=int(project_id)).first()
+            except (ValueError, TypeError):
+                selected_project = None
+
+        if not selected_project and allowed_projects.exists():
+            selected_project = allowed_projects.first()
+            self.request.session["last_board_project_id"] = str(selected_project.id)
+
+        context["selected_project_id"] = None
+        context["tasks"] = []
+
+        if selected_project:
+            context["tasks"] = Task.objects.filter(project=selected_project)
+            context["selected_project_id"] = selected_project.id
+            context["selected_project_title"] = selected_project.title
+
+        return context
 
 
 @method_decorator(login_required, name="dispatch")
@@ -99,7 +156,6 @@ class TaskListView(HorillaListView):
             (get_field("stage").verbose_name, "stage"),
             (get_field("task_managers").verbose_name, "get_managers"),
             (get_field("task_members").verbose_name, "get_members"),
-            (get_field("end_date").verbose_name, "end_date"),
             (get_field("status").verbose_name, "get_status_display"),
             (get_field("description").verbose_name, "get_description"),
         ]
@@ -111,51 +167,21 @@ class TaskListView(HorillaListView):
             (get_field("title").verbose_name, "title"),
             (get_field("project").verbose_name, "project__title"),
             (get_field("stage").verbose_name, "stage"),
-            (get_field("end_date").verbose_name, "end_date"),
             (get_field("status").verbose_name, "status"),
         ]
 
     row_status_indications = [
         (
-            "todo--dot",
-            _("To Do"),
-            """
-                onclick="
-                    $('#applyFilter').closest('form').find('[name=status]').val('to_do');
-                    $('#applyFilter').click();
-                "
-            """,
-        ),
-        (
-            "in-progress--dot",
-            _("In progress"),
-            """
-                onclick="
-                    $('#applyFilter').closest('form').find('[name=status]').val('in_progress');
-                    $('#applyFilter').click();
-                "
-            """,
-        ),
-        (
-            "completed--dot",
-            _("Completed"),
-            """
-                onclick="
-                    $('#applyFilter').closest('form').find('[name=status]').val('completed');
-                    $('#applyFilter').click();
-                "
-            """,
-        ),
-        (
-            "expired--dot",
-            _("Expired"),
-            """
-                onclick="
-                    $('#applyFilter').closest('form').find('[name=status]').val('expired');
-                    $('#applyFilter').click();
-                "
-            """,
-        ),
+            f"{status}--dot",
+            label,
+            f"""
+            onclick="
+                $('#applyFilter').closest('form').find('[name=status]').val('{status}');
+                $('#applyFilter').click();
+            "
+        """,
+        )
+        for status, label in NEW_TASK_STATUS
     ]
 
     row_status_class = "status-{status}"
@@ -419,8 +445,6 @@ class TaskDetailView(HorillaDetailedView):
             (get_field("task_managers").verbose_name, "get_managers"),
             (get_field("task_members").verbose_name, "get_members"),
             (get_field("status").verbose_name, "get_status_display"),
-            (get_field("end_date").verbose_name, "end_date"),
-            (get_field("document").verbose_name, "document_col", True),
             (get_field("description").verbose_name, "description"),
         ]
 
@@ -524,45 +548,16 @@ class TaskCardView(HorillaCardView):
 
     card_status_indications = [
         (
-            "todo--dot",
-            _("To Do"),
-            """
-                onclick="
-                    $('#applyFilter').closest('form').find('[name=status]').val('to_do');
-                    $('#applyFilter').click();
-                "
-            """,
-        ),
-        (
-            "in-progress--dot",
-            _("In progress"),
-            """
-                onclick="
-                    $('#applyFilter').closest('form').find('[name=status]').val('in_progress');
-                    $('#applyFilter').click();
-                "
-            """,
-        ),
-        (
-            "completed--dot",
-            _("Completed"),
-            """
-                onclick="
-                    $('#applyFilter').closest('form').find('[name=status]').val('completed');
-                    $('#applyFilter').click();
-                "
-            """,
-        ),
-        (
-            "expired--dot",
-            _("Expired"),
-            """
-                onclick="
-                    $('#applyFilter').closest('form').find('[name=status]').val('expired');
-                    $('#applyFilter').click();
-                "
-            """,
-        ),
+            f"{status}--dot",
+            label,
+            f"""
+            onclick="
+                $('#applyFilter').closest('form').find('[name=status]').val('{status}');
+                $('#applyFilter').click();
+            "
+        """,
+        )
+        for status, label in NEW_TASK_STATUS
     ]
 
     card_status_class = "status-{status}"

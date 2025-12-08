@@ -183,9 +183,6 @@ class ProjectsList(HorillaListView):
             (get_field("managers").verbose_name, "get_managers"),
             (get_field("members").verbose_name, "get_members"),
             (get_field("status").verbose_name, "get_status_display"),
-            (get_field("start_date").verbose_name, "start_date"),
-            (get_field("end_date").verbose_name, "end_date"),
-            (get_field("document").verbose_name, "get_document_html"),
             (get_field("description").verbose_name, "get_description"),
         ]
 
@@ -194,8 +191,6 @@ class ProjectsList(HorillaListView):
         get_field = self.model()._meta.get_field
         return [
             (get_field("title").verbose_name, "title"),
-            (get_field("start_date").verbose_name, "start_date"),
-            (get_field("end_date").verbose_name, "end_date"),
         ]
 
     row_status_indications = [

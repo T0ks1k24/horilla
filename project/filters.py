@@ -19,23 +19,8 @@ class ProjectFilter(HorillaFilterSet):
             "managers",
             "members",
             "status",
-            "end_date",
-            "start_date",
             "is_active",
         ]
-
-    start_from = django_filters.DateFilter(
-        field_name="start_date",
-        lookup_expr="gte",
-        widget=forms.DateInput(attrs={"type": "date"}),
-        label=_("Start From"),
-    )
-    end_till = django_filters.DateFilter(
-        field_name="end_date",
-        lookup_expr="lte",
-        widget=forms.DateInput(attrs={"type": "date"}),
-        label=_("End Till"),
-    )
 
     def filter_by_project(self, queryset, _, value):
         if self.data.get("search_field"):
@@ -49,11 +34,6 @@ class TaskFilter(FilterSet):
     task_managers = django_filters.ModelChoiceFilter(
         field_name="task_managers", queryset=Employee.objects.all()
     )
-    end_till = django_filters.DateFilter(
-        field_name="end_date",
-        lookup_expr="lte",
-        widget=forms.DateInput(attrs={"type": "date"}),
-    )
 
     class Meta:
         model = Task
@@ -61,7 +41,6 @@ class TaskFilter(FilterSet):
             "title",
             "stage",
             "task_managers",
-            "end_date",
             "status",
             "project",
         ]
@@ -73,12 +52,6 @@ class TaskFilter(FilterSet):
 
 class TaskAllFilter(HorillaFilterSet):
     search = django_filters.CharFilter(method="filter_by_task")
-    end_till = django_filters.DateFilter(
-        field_name="end_date",
-        lookup_expr="lte",
-        widget=forms.DateInput(attrs={"type": "date"}),
-        label=_("End Till"),
-    )
 
     class Meta:
         model = Task
@@ -88,16 +61,12 @@ class TaskAllFilter(HorillaFilterSet):
             "stage",
             "task_managers",
             "task_members",
-            "end_date",
             "status",
             "is_active",
         ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.form.fields["end_till"].label = (
-            f"{self.Meta.model()._meta.get_field('end_date').verbose_name} Till"
-        )
 
     def filter_by_task(self, queryset, _, value):
         queryset = queryset.filter(title__icontains=value)

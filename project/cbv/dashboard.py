@@ -112,8 +112,5 @@ class ProjectDetailView(HorillaDetailedView):
             (get_field("members").verbose_name, "get_members"),
             (get_field("status").verbose_name, "get_status_display"),
             (_("No of Tasks"), "task_count"),
-            (get_field("start_date").verbose_name, "start_date"),
-            (get_field("end_date").verbose_name, "end_date"),
-            (get_field("document").verbose_name, "get_document_html"),
             (get_field("description").verbose_name, "description"),
         ]

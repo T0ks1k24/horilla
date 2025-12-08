@@ -1,0 +1,319 @@
+/* --- Змінні та Глобальні стилі (Atlassian Design Tokens) --- */
+:root {
+  --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Noto Sans", Ubuntu, "Droid Sans", "Helvetica Neue", sans-serif;
+
+  /* Jira Colors */
+  --bg-body: #ffffff; /* Jira часто має білий фон за дошкою, або дуже світлий */
+  --bg-board: #f4f5f7; /* Фон самої зони дошки */
+  --bg-column: #f4f5f7; /* Світло-сірий фон колонок */
+  --bg-column-hover: #ebecf0;
+
+  --text-dark: #172b4d; /* Основний темний колір тексту Jira */
+  --text-grey: #5e6c84; /* Другорядний текст */
+  --text-subtle: #6b778c;
+
+  --blue-primary: #0052cc;
+  --blue-hover: #0065ff;
+
+  --card-radius: 3px; /* Jira використовує малий радіус (3px-4px) */
+  --shadow-card: 0 1px 1px rgba(9, 30, 66, 0.25), 0 0 1px rgba(9, 30, 66, 0.31); /* Специфічна тінь Jira */
+  --shadow-hover: 0 4px 8px -2px rgba(9, 30, 66, 0.25),
+    0 0 1px rgba(9, 30, 66, 0.31);
+}
+
+body {
+  font-family: var(--font-stack);
+  color: var(--text-dark);
+  background-color: var(--bg-body);
+  line-height: 1.5;
+}
+
+.oh-wrapper {
+  padding: 0;
+  margin: 0;
+  background-color: white; /* Контейнер білий */
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  /* overflow: hidden; */
+}
+
+/* --- Controls (Верхня панель) --- */
+.board-controls {
+  background: white;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.selector-group {
+  display: flex;
+  align-items: center;
+}
+
+.project-label {
+  font-size: 14px; /* Більший шрифт для хлібних крихт */
+  font-weight: 500;
+  color: var(--text-grey);
+  margin-right: 4px;
+}
+.modern-select {
+  appearance: none;
+  background: #f7f9fc; /* світлий фон з легким блакитним відтінком */
+  border: 1px solid #d0d7e2; /* трохи м'якший сірий */
+  padding: 10px 36px 10px 16px;
+  border-radius: 8px; /* трохи більше округлостей */
+  font-size: 16px;
+  font-weight: 500;
+  color: #1b2a47; /* темно-синій текст */
+  cursor: pointer;
+  min-width: 220px;
+  transition: all 0.3s ease; /* плавні переходи для всього */
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%237c90c0' stroke-width='2'/%3E%3C/svg%3E"); /* невелика синя стрілка */
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+}
+
+.modern-select:hover {
+  border-color: #a3b4d1; /* легкий синій при наведенні */
+  background-color: #f0f4fb;
+}
+
+.modern-select:focus {
+  outline: none;
+  border-color: #5a8cff; /* м’який синій акцент */
+  box-shadow: 0 0 0 3px rgba(90, 140, 255, 0.2);
+  background-color: #ffffff;
+}
+
+.modern-select option {
+  padding: 10px;
+  background-color: #ffffff;
+  color: #1b2a47;
+}
+
+/* --- Board Area --- */
+.kanban-board {
+  width: 100%;
+  display: flex;
+  padding: 24px;
+  height: 100%;
+  align-items: flex-start;
+  background-color: white;
+}
+
+/* Колонка */
+.kanban-column {
+  width: 20%;
+  background-color: var(--bg-column);
+  border-radius: var(--card-radius);
+  display: flex;
+  flex-direction: column;
+  height: 90vh;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+  padding: 6px 8px 8px;
+  border: none;
+}
+
+/* Хедер колонки */
+.kanban-column-header {
+  padding: 10px 8px;
+  font-size: 13px;
+  color: var(--text-grey);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: grab;
+}
+
+/* Контейнер карток */
+.kanban-cards {
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 4px 4px;
+  min-height: 50px;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(9, 30, 66, 0.25) transparent;
+}
+
+.kanban-cards::-webkit-scrollbar {
+  width: 8px;
+}
+.kanban-cards::-webkit-scrollbar-track {
+  background: transparent;
+}
+.kanban-cards::-webkit-scrollbar-thumb {
+  background-color: rgba(9, 30, 66, 0.25);
+  border-radius: 4px;
+  border: 2px solid var(--bg-column); /* Створює відступ від краю */
+}
+
+/* --- Card (Тікет) --- */
+.kanban-card {
+  background-color: white;
+  padding: 10px; /* Більш компактно */
+  margin-bottom: 6px; /* Менший відступ між картками */
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-card);
+  cursor: grab;
+  /* Прибираємо товстий кольоровий бордер зліва, робимо його тоншим або прозорим */
+  border-left: 0;
+  transition: background-color 0.1s, box-shadow 0.1s;
+  text-decoration: none;
+  display: block;
+  color: inherit;
+  position: relative;
+
+  /* Якщо ви все ж хочете кольорову індикацію, краще робити її смужечкою збоку, але не такою товстою */
+  border-left: 3px solid transparent;
+}
+
+.kanban-card:hover {
+  background-color: #fafbfc; /* Ледь помітна зміна фону при наведенні */
+  box-shadow: var(--shadow-hover);
+  text-decoration: none;
+  color: inherit;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 400; /* Jira використовує regular вагу для заголовків карток */
+  color: var(--text-dark);
+  margin-bottom: 6px;
+  line-height: 20px;
+  word-wrap: break-word;
+}
+
+.card-desc {
+  font-size: 12px;
+  font-weight: 400; /* Jira використовує regular вагу для заголовків карток */
+  color: var(--text-dark);
+  margin-bottom: 6px;
+  line-height: 20px;
+  word-wrap: break-word;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: none; /* Jira не має лінії розділювача всередині картки */
+  min-height: 24px;
+}
+
+.card-id {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-subtle);
+  font-family: var(--font-stack); /* Не моноширинний, а звичайний шрифт */
+  background: none;
+  padding: 0;
+}
+
+/* Avatars */
+.task-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50% !important;
+  border: 2px solid white;
+  margin-left: -4px;
+  background-color: #dfe1e6;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dark);
+}
+.user-avatar:first-child {
+  margin-left: 0;
+}
+
+/* Status Indicators (Subtle Left Border) */
+.status-border-ongoing {
+  border-left-color: #ff9800 !important;
+}
+.status-border-to_do {
+  border-left-color: #42526e !important;
+} /* Сірий для To Do */
+.status-border-in_progress {
+  border-left-color: #0052cc !important;
+}
+.status-border-code_review {
+  border-left-color: #8777d9 !important;
+}
+.status-border-completed {
+  border-left-color: #36b37e !important;
+}
+
+/* Drag and Drop States */
+.sortable-ghost {
+  opacity: 0.8;
+  background: #ebecf0; /* Сіра "дірка" куди впаде картка */
+  box-shadow: none;
+  border: 1px dashed #c1c7d0;
+  color: transparent;
+}
+.sortable-ghost * {
+  opacity: 0;
+}
+
+.sortable-drag {
+  cursor: grabbing;
+  opacity: 1;
+  background: white;
+  box-shadow: 0 8px 16px -4px rgba(9, 30, 66, 0.25),
+    0 0 0 1px rgba(9, 30, 66, 0.08);
+  transform: rotate(2deg); /* Легкий нахил при перетягуванні */
+}
+
+/* Modals (Clean Style) */
+.modal-overlay {
+  background: rgba(9, 30, 66, 0.54); /* Темно-синій напівпрозорий фон */
+  backdrop-filter: blur(1px);
+}
+
+.modal-wrapper-custom {
+  box-shadow: 0 0 0 1px rgba(9, 30, 66, 0.08), 0 2px 1px rgba(9, 30, 66, 0.08),
+    0 20px 32px rgba(9, 30, 66, 0.25);
+  border-radius: 3px;
+}
+
+/* Empty State */
+.empty-state {
+  padding: 20px;
+  text-align: center;
+}
+.empty-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  color: var(--text-grey);
+}
+
+.kanban-column.allowed-drop {
+  box-shadow: 0 0 1px rgba(53, 216, 61, 0.55), 0 0 28px rgba(53, 216, 61, 0.35);
+  background-color: rgba(53, 216, 61, 0.1);
+  transition: box-shadow 0.1s ease, background-color 0.1s ease;
+  border-radius: var(--card-radius);
+}
+/* .kanban-column.denied-drop {
+  border: 2px solid rgba(255, 82, 82, 0.8);
+  background-color: rgba(255, 82, 82, 0.06);
+  box-shadow: 0 2px 6px rgba(255, 82, 82, 0.25);
+  transition: all 0.25s;
+} */

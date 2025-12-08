@@ -1,0 +1,52 @@
+<div class="kanban-card status-border-{{ task.status }}" 
+     data-task-id="{{ task.id }}" 
+     {# --- ДОДАЄМО ЦЕЙ РЯДОК --- #}
+     data-created-at="{{ task.created_at|date:'U' }}" 
+     {# ------------------------- #}
+     data-toggle="oh-modal-toggle" 
+     data-target="#genericModal" 
+     hx-get="{% url 'task-detail-view' task.id %}?view=list"
+     hx-target="#genericModalBody"
+     style="cursor: pointer;">
+
+    <div class="card-title">
+        {{ task.title }}
+    </div>
+
+    <div class="card-desc">{{ task.description|striptags|truncatechars:60 }}</div>
+
+    <div class="card-meta" style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+        
+        <div class="meta-left" style="display: flex; align-items: center;">
+            
+            {% if task.stage %}
+                {% with stage_name=task.stage|stringformat:"s"|lower %}
+                    
+                    <span class="stage-icon" style="margin-right: 8px; font-size: 14px;">
+                        {% if 'epic' in stage_name %}
+                            <i class="fas fa-bolt" style="color: #904ee2;" title="{{ task.stage }}"></i>
+                        
+                        {% elif 'bug' in stage_name %}
+                            <i class="fas fa-bug" style="color: #e5493a;" title="{{ task.stage }}"></i>
+                        
+                        {% else %}
+                            <i class="fas fa-check-square" style="color: #4bade8;" title="{{ task.stage }}"></i>
+                        {% endif %}
+                    </span>
+
+                {% endwith %}
+            {% endif %}
+        </div>
+
+        <div class="task-avatars">
+            {% for member in task.task_members.all %}
+                <img class="user-avatar" 
+                     src="https://ui-avatars.com/api/?name={{ member.get_full_name|urlencode }}&background=random&color=fff&size=64" 
+                     alt="{{ member.get_full_name }}" 
+                     title="{{ member.get_full_name }}">
+            {% empty %}
+                <span class="no-members"><i class="far fa-user"></i></span>
+            {% endfor %}
+        </div>
+    </div>
+</div>

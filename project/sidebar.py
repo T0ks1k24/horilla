@@ -32,6 +32,11 @@ SUBMENUS = [
         "accessibility": "project.sidebar.project_accessibility",
     },
     {
+        "menu": _("Board"),
+        "redirect": reverse("view-task-board"),
+        "accessibility": "project.sidebar.board_accessibility",
+    },
+    {
         "menu": _("Tasks"),
         "redirect": reverse("task-all"),
         "accessibility": "project.sidebar.task_accessibility",
@@ -103,6 +108,21 @@ def task_accessibility(request, submenu, user_perms, *args, **kwargs):
 
 
 def timesheet_accessibility(request, submenu, user_perms, *args, **kwargs):
+    user = request.user
+    if (
+        user.has_perm("project.view_timesheet")
+        # or has_subordinates(request)
+        or any_project_manager(user)
+        or any_project_member(user)
+        or any_task_manager(user)
+        or any_task_member(user)
+    ):
+        return True
+    else:
+        return False
+
+
+def board_accessibility(request, submenu, user_perms, *args, **kwargs):
     user = request.user
     if (
         user.has_perm("project.view_timesheet")

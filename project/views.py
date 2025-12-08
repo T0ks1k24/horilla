@@ -1146,19 +1146,34 @@ def task_all_create(request):
     )
 
 
+# @login_required
+# def update_project_task_status(request, task_id):
+#     status = request.GET.get("status")
+
+#     task = get_object_or_404(Task, id=task_id)
+#     task.status = status
+#     task.save()
+
+#     messages.success(request, _("Task status has been updated successfully"))
+#     return HttpResponse("<script>$('#reloadMessagesButton').click();</script>")
+
+
 @login_required
 def update_project_task_status(request, task_id):
-    status = request.GET.get("status")
+    status = request.POST.get("status")
+
+    if not status:
+        return JsonResponse(
+            {"type": "error", "message": "Missing 'status' parameter"}, status=400
+        )
+
     task = get_object_or_404(Task, id=task_id)
-
-    if task.end_date and task.end_date < date.today():
-        messages.warning(request, _("Cannot update status. Task has already expired."))
-        return HttpResponse("<script>$('#reloadMessagesButton').click();</script>")
-
     task.status = status
     task.save()
-    messages.success(request, _("Task status has been updated successfully"))
-    return HttpResponse("<script>$('#reloadMessagesButton').click();</script>")
+
+    return JsonResponse(
+        {"type": "success", "message": "Task status updated successfully"}
+    )
 
 
 @login_required
