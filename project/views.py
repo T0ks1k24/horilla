@@ -762,7 +762,6 @@ def quick_create_task(request, stage_id):
             initial={
                 "stage": project_stage,
                 "project": project_stage.project,
-                "end_date": project_stage.project.end_date,
             }
         )
         if request.method == "POST":

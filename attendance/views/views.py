@@ -1461,7 +1461,9 @@ def validate_this_attendance(request, obj_id):
     except (Attendance.DoesNotExist, ValueError):
         messages.error(request, _("Attendance not found"))
 
-    return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+    return HttpResponseRedirect(
+        request.META.get("HTTP_REFERER", "/attendance/attendance-view/")
+    )
 
 
 @login_required
@@ -1497,7 +1499,9 @@ def revalidate_this_attendance(request, obj_id):
                 redirect=reverse("view-my-attendance") + f"?id={attendance.id}",
                 icon="refresh",
             )
-        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+        return HttpResponseRedirect(
+            request.META.get("HTTP_REFERER", "/attendance/attendance-view/")
+        )
     return HttpResponse("You Cannot Request for others attendance")
 
 
@@ -1514,7 +1518,9 @@ def approve_overtime(request, obj_id):
         if not request.user.is_superuser:
             if attendance.employee_id.id == request.user.employee_get.id:
                 messages.error(request, _("You cannot approve your own overtime."))
-                return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+                return HttpResponseRedirect(
+                    request.META.get("HTTP_REFERER", "/attendance/attendance-view/")
+                )
         attendance.attendance_overtime_approve = True
         attendance.save()
         urlencode = request.GET.urlencode()

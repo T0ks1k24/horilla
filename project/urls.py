@@ -135,11 +135,21 @@ urlpatterns = [
     ),
     path("tasks-card-view/", tasks.TaskCardView.as_view(), name="tasks-card-view"),
     path("tasks-navbar/", tasks.TasksNavBar.as_view(), name="tasks-navbar"),
-    path("create-task-all/", tasks.TaskCreateForm.as_view(), name="create-task-all"),
+    # path("create-task-all/", tasks.TaskCreateForm.as_view(), name="create-task-all"),
+    path(
+        "project/create-task-all/",
+        tasks.TaskCreateForm.as_view(),
+        name="create-task-all",
+    ),
     path(
         "update-task-all/<int:pk>/",
         tasks.TaskCreateForm.as_view(),
         name="update-task-all",
+    ),
+    path(
+        "create-task/<int:project_id>/",
+        tasks.TaskCreateForm.as_view(),
+        name="create-task",
     ),
     path(
         "task-detail-view/<int:pk>/",

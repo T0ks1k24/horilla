@@ -62,6 +62,40 @@ class BoardTemplateView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        # 1. Додаємо налаштування колонок для шаблону (HTML циклу)
+        context["kanban_columns"] = [
+            {
+                "status": "ongoing",
+                "label": "Ongoing",
+                "icon": "fas fa-sync",
+                "color": "#ff9800",
+            },
+            {
+                "status": "to_do",
+                "label": "To Do",
+                "icon": "fas fa-circle",
+                "color": "#ff5630",
+            },
+            {
+                "status": "in_progress",
+                "label": "In Progress",
+                "icon": "fas fa-spinner fa-spin",
+                "color": "#0052cc",
+            },
+            {
+                "status": "code_review",
+                "label": "Code Review",
+                "icon": "fas fa-glasses",
+                "color": "#6554c0",
+            },
+            {
+                "status": "completed",
+                "label": "Done",
+                "icon": "fas fa-check-circle",
+                "color": "#36b37e",
+            },
+        ]
+
         if not hasattr(self.request.user, "employee_get"):
             return context
 
@@ -89,12 +123,14 @@ class BoardTemplateView(TemplateView):
 
         if not selected_project and allowed_projects.exists():
             selected_project = allowed_projects.first()
-            self.request.session["last_board_project_id"] = str(selected_project.id)
+            if selected_project:
+                self.request.session["last_board_project_id"] = str(selected_project.id)
 
         context["selected_project_id"] = None
         context["tasks"] = []
 
         if selected_project:
+            # Тут можна додати сортування, якщо потрібно, наприклад .order_by('-created_at')
             context["tasks"] = Task.objects.filter(project=selected_project)
             context["selected_project_id"] = selected_project.id
             context["selected_project_title"] = selected_project.title
@@ -154,9 +190,10 @@ class TaskListView(HorillaListView):
             (get_field("title").verbose_name, "title"),
             (get_field("project").verbose_name, "project"),
             (get_field("stage").verbose_name, "stage"),
+            (get_field("status").verbose_name, "get_status_display"),
+            (get_field("story_point").verbose_name, "get_story_point"),
             (get_field("task_managers").verbose_name, "get_managers"),
             (get_field("task_members").verbose_name, "get_members"),
-            (get_field("status").verbose_name, "get_status_display"),
             (get_field("description").verbose_name, "get_description"),
         ]
 
@@ -287,11 +324,11 @@ class TaskCreateForm(HorillaFormView):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        if self.request.user.has_perm("project.view_task"):
-            self.dynamic_create_fields = [
-                ("project", DynamicProjectCreationFormView),
-                ("stage", StageDynamicCreateForm, ["project"]),
-            ]
+        # if self.request.user.has_perm("project.view_task"):
+        #     self.dynamic_create_fields = [
+        #         ("project", DynamicProjectCreationFormView),
+        #         ("stage", StageDynamicCreateForm, ["project"]),
+        #     ]
 
     def get(self, request, *args, pk=None, **kwargs):
         project_id = self.kwargs.get("project_id")
@@ -377,18 +414,18 @@ class TaskCreateForm(HorillaFormView):
                     ("stage", StageDynamicCreateForm, ["project"]),
                 ]
 
-        if project_id or stage_id:
-            if (
-                self.request.user.employee_get in project.managers.all()
-                or self.request.user.is_superuser
-            ):
+        # if project_id or stage_id:
+        #     if (
+        #         self.request.user.employee_get in project.managers.all()
+        #         or self.request.user.is_superuser
+        #     ):
 
-                self.form.fields["project"].choices.append(
-                    ("dynamic_create", "Dynamic create")
-                )
-                self.form.fields["stage"].choices.append(
-                    ("dynamic_create", "Dynamic create")
-                )
+        #         self.form.fields["project"].choices.append(
+        #             ("dynamic_create", "Dynamic create")
+        #         )
+        #         self.form.fields["stage"].choices.append(
+        #             ("dynamic_create", "Dynamic create")
+        #         )
 
         return context
 
@@ -399,11 +436,13 @@ class TaskCreateForm(HorillaFormView):
                 message = _(f"{self.form.instance} Updated")
             else:
                 message = _("New Task created")
+
             form.save()
             messages.success(self.request, _(message))
-            if stage_id or self.request.GET.get("project_task"):
-                return HttpResponse("<script>location.reload();</script>")
-            return self.HttpResponse("<script>$('#applyFilter').click();</script>")
+            response = HttpResponse("Done", status=200)
+            response["HX-Refresh"] = "true"
+
+            return response
         return super().form_valid(form)
 
 
@@ -442,9 +481,10 @@ class TaskDetailView(HorillaDetailedView):
         return [
             (get_field("project").verbose_name, "project"),
             (get_field("stage").verbose_name, "stage"),
+            (get_field("status").verbose_name, "get_status_display"),
+            (get_field("story_point").verbose_name, "story_point"),
             (get_field("task_managers").verbose_name, "get_managers"),
             (get_field("task_members").verbose_name, "get_members"),
-            (get_field("status").verbose_name, "get_status_display"),
             (get_field("description").verbose_name, "description"),
         ]
 

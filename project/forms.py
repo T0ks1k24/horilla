@@ -81,7 +81,6 @@ class TaskForm(ModelForm):
         # exclude = ("project_id",)
 
         widgets = {
-            "end_date": forms.DateInput(attrs={"type": "date"}),
             "project": forms.HiddenInput(),
             "stage": forms.HiddenInput(),
             "sequence": forms.HiddenInput(),
@@ -121,7 +120,6 @@ class TaskFormCreate(ModelForm):
         # exclude = ("project_id",)
 
         widgets = {
-            "end_date": forms.DateInput(attrs={"type": "date"}),
             "project": forms.HiddenInput(),
             "sequence": forms.HiddenInput(),
             "stage": forms.SelectMultiple(
@@ -164,8 +162,6 @@ class TaskAllForm(ModelForm):
         exclude = ["is_active"]
 
         widgets = {
-            "start_date": forms.DateInput(attrs={"type": "date"}),
-            "end_date": forms.DateInput(attrs={"type": "date"}),
             "sequence": forms.HiddenInput(),
         }
 

@@ -1,44 +1,39 @@
-<div class="kanban-card status-border-{{ task.status }}" 
+<div class="kanban-card status-{{ task.status }}" 
      data-task-id="{{ task.id }}" 
-     {# --- ДОДАЄМО ЦЕЙ РЯДОК --- #}
      data-created-at="{{ task.created_at|date:'U' }}" 
-     {# ------------------------- #}
      data-toggle="oh-modal-toggle" 
      data-target="#genericModal" 
+     
      hx-get="{% url 'task-detail-view' task.id %}?view=list"
      hx-target="#genericModalBody"
-     style="cursor: pointer;">
+     hx-trigger="click">
 
-    <div class="card-title">
-        {{ task.title }}
+    <!-- Верхня панель: Title + Story Points -->
+    <div class="card-header">
+        <div class="card-title">{{ task.title }}</div>
+        <div class="meta-story-point">{{ task.story_point }}</div>
     </div>
 
-    <div class="card-desc">{{ task.description|striptags|truncatechars:60 }}</div>
+    <!-- Опис -->
+    <div class="card-desc">{{ task.description|striptags|truncatechars:40 }}</div>
 
-    <div class="card-meta" style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
-        
-        <div class="meta-left" style="display: flex; align-items: center;">
-            
+    <!-- Метадані -->
+    <div class="card-meta">
+        <div class="meta-stage">
             {% if task.stage %}
                 {% with stage_name=task.stage|stringformat:"s"|lower %}
-                    
-                    <span class="stage-icon" style="margin-right: 8px; font-size: 14px;">
-                        {% if 'epic' in stage_name %}
-                            <i class="fas fa-bolt" style="color: #904ee2;" title="{{ task.stage }}"></i>
-                        
-                        {% elif 'bug' in stage_name %}
-                            <i class="fas fa-bug" style="color: #e5493a;" title="{{ task.stage }}"></i>
-                        
-                        {% else %}
-                            <i class="fas fa-check-square" style="color: #4bade8;" title="{{ task.stage }}"></i>
-                        {% endif %}
-                    </span>
-
+                    {% if 'epic' in stage_name %}
+                        <i class="fas fa-bolt stage-icon epic" title="{{ task.stage }}"></i>
+                    {% elif 'bug' in stage_name %}
+                        <i class="fas fa-bug stage-icon bug" title="{{ task.stage }}"></i>
+                    {% else %}
+                        <i class="fas fa-check-square stage-icon task" title="{{ task.stage }}"></i>
+                    {% endif %}
                 {% endwith %}
             {% endif %}
         </div>
 
-        <div class="task-avatars">
+        <div class="meta-avatars">
             {% for member in task.task_members.all %}
                 <img class="user-avatar" 
                      src="https://ui-avatars.com/api/?name={{ member.get_full_name|urlencode }}&background=random&color=fff&size=64" 
@@ -50,3 +45,102 @@
         </div>
     </div>
 </div>
+
+
+<style>
+.kanban-card {
+    position: relative;
+    cursor: pointer;
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.kanban-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Верхній рядок: title + story point */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.card-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #172b4d;
+}
+
+.meta-story-point {
+    font-weight: 600;
+    font-size: 12px;
+    padding: 2px 6px;
+    background: #f5f5f5;
+    color: #333;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Опис */
+.card-desc {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+/* Метадані (stage + avatars) */
+.card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.meta-stage i {
+    font-size: 14px;
+    margin-right: 6px;
+}
+
+.meta-stage i.epic { color: #904ee2; }
+.meta-stage i.bug { color: #e5493a; }
+.meta-stage i.task { color: #4bade8; }
+
+.meta-avatars {
+    display: flex;
+    align-items: center;
+}
+
+.user-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid white;
+    margin-left: -6px;
+    background-color: #dfe1e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-avatar:first-child {
+    margin-left: 0;
+}
+
+.no-members i {
+    font-size: 16px;
+    color: #aaa;
+}
+
+/* Статуси карток (лівий бордер) */
+.status-ongoing { border-left: 4px solid #ff9800; }
+.status-to_do { border-left: 4px solid #ff5630; }
+.status-in_progress { border-left: 4px solid #0052cc; }
+.status-code_review { border-left: 4px solid #6554c0; }
+.status-completed { border-left: 4px solid #36b37e; }
+</style>

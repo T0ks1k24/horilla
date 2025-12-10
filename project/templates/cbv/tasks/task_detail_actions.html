@@ -11,7 +11,7 @@
     </a>
 {% endif %}
 
-    <a hx-get="{% url 'task-timesheet' instance.id %}?employee_id={{request.user.employee_get.id}}"
+    {% comment %} <a hx-get="{% url 'task-timesheet' instance.id %}?employee_id={{request.user.employee_get.id}}"
         hx-target='#TaskTimesheetTarget' data-target="#TaskTimesheetModal" data-toggle="oh-modal-toggle"
         data-key=".oh-kanban__section"
         class="oh-btn oh-btn--info flex-fill"
@@ -20,7 +20,7 @@
         <ion-icon name="bar-chart" role="img" class="md hydrated" aria-label="create outline">
         </ion-icon>
         {% trans "Time sheet" %}
-    </a>
+    </a> {% endcomment %}
 
 {% if request.user|task_crud_perm:instance or perms.project.view_task %}
     <a href="{% url 'delete-task' instance.id %}?view={{request.GET.view }}" class="oh-btn oh-btn-group oh-btn--danger flex-fill"

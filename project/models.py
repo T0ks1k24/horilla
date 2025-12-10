@@ -347,6 +347,7 @@ class Task(HorillaModel):
         choices=TASK_STATUS, max_length=250, default="to_do", verbose_name=_("Status")
     )
     description = models.TextField(verbose_name=_("Description"))
+    story_point = models.IntegerField(default=0, verbose_name=_("Story Point"))
     sequence = models.IntegerField(default=0)
     objects = HorillaCompanyManager("project__company_id")
 
@@ -386,11 +387,9 @@ class Task(HorillaModel):
             """
                 <div class="my-2">Project Name : <span class="font-semibold">{}</span></div>
                 <div class="mb-2">Stage Name : <span class="font-semibold">{}</span></div>
-                <div>End date : <span class="dateformat_changer font-semibold">{}</span></div>
             """,
             self.if_project(),
             self.stage,
-            self.end_date,
         )
         return col
 
@@ -425,6 +424,12 @@ class Task(HorillaModel):
             return members_name_string
         else:
             return ""
+
+    def get_story_point(self):
+        return self.story_point
+
+    def get_description(self):
+        return self.description
 
     def actions(self):
         """
