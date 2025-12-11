@@ -900,31 +900,38 @@ def update_task(request, task_id):
 @login_required
 @task_delete_permission()
 def delete_task(request, task_id):
-    """
-    For delete task
-    """
-    view_type = request.GET.get("view")
-    path = urlparse(request.META["HTTP_REFERER"]).path
-    url_after_project = path.split("project/")[1].rstrip("/")
-    # Split into components
-    parts = url_after_project.split("/")
-    view_name = parts[0]
-    object_id = parts[1] if len(parts) > 1 else None
-
-    if not view_name == "task-all":
-        task_view_url = reverse(view_name, kwargs={"project_id": object_id})
-    else:
-        task_view_url = reverse("task-all")
-    redirected_url = f"{task_view_url}?view={view_type}"
-    task = Task.objects.get(id=task_id)
-    project_id = task.project.id
+    task = get_object_or_404(Task, id=task_id)
+    project_id = task.project.id if task.project else None
+    view_type = request.GET.get("view", "list")
     task.delete()
     messages.success(request, _("The task has been deleted successfully."))
+
     if request.META.get("HTTP_HX_REQUEST"):
+        redirect_url = f"/project/task-filter/{project_id}/?view={view_type}"
         return HttpResponse(
-            f"<span hx-get='/project/task-filter/{project_id}/?view={view_type}' hx-trigger='load' hx-target='#viewContainer'></span>"
+            f"<span hx-get='{redirect_url}' hx-trigger='load' hx-target='#viewContainer'></span>"
         )
-    return redirect(redirected_url)
+
+    if view_type == "board" or "task-all-board" in request.META.get("HTTP_REFERER", ""):
+        base_url = reverse("task-all-board")
+        if project_id:
+            return redirect(f"{base_url}?project_id={project_id}")
+        return redirect(base_url)
+
+    if "task-all" in request.META.get(
+        "HTTP_REFERER", ""
+    ) and "board" not in request.META.get("HTTP_REFERER", ""):
+        return redirect(f"{reverse('task-all')}?view={view_type}")
+
+    if project_id:
+        try:
+            return redirect(
+                f"{reverse('task-view', kwargs={'project_id': project_id})}?view={view_type}"
+            )
+        except:
+            pass
+
+    return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
 @login_required

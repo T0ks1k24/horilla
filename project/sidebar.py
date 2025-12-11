@@ -33,7 +33,7 @@ SUBMENUS = [
     },
     {
         "menu": _("Board"),
-        "redirect": reverse("view-task-board"),
+        "redirect": reverse("task-all-board"),
         "accessibility": "project.sidebar.board_accessibility",
     },
     {
