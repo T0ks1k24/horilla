@@ -8,7 +8,7 @@ from typing import Any
 
 from django.contrib import messages
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import resolve, reverse, reverse_lazy
 from django.utils.decorators import method_decorator
@@ -421,118 +421,70 @@ class LeaveRequestFormView(HorillaFormView):
         return super().form_invalid(form)
 
     def form_valid(self, form: LeaveRequestCreationForm) -> HttpResponse:
-        form = self.form_class(
-            self.request.POST, self.request.FILES, instance=self.form.instance
-        )
         if form.is_valid():
-            if form.instance.pk:
-                leave_request = form.save(commit=False)
-                save = True
+            leave_request = form.save(commit=False)
+            leave_request.created_by = self.request.user.employee_get
 
-                if save:
-                    leave_request.save()
-                    messages.success(
-                        self.request, _("Leave request is updated successfully")
+            if (
+                not leave_request.pk
+                and leave_request.leave_type_id.require_approval == "no"
+            ):
+                employee_id = leave_request.employee_id
+                leave_type_id = leave_request.leave_type_id
+                available_leave = AvailableLeave.objects.get(
+                    leave_type_id=leave_type_id, employee_id=employee_id
+                )
+
+                if leave_request.requested_days > available_leave.available_days:
+                    leave = (
+                        leave_request.requested_days - available_leave.available_days
                     )
-                    with contextlib.suppress(Exception):
-                        notify.send(
-                            self.request.user.employee_get,
-                            recipient=leave_request.employee_id.employee_work_info.reporting_manager_id.employee_user_id,
-                            verb=f"Leave request updated for {leave_request.employee_id}.",
-                            verb_ar=f"تم تحديث طلب الإجازة لـ {leave_request.employee_id}.",
-                            verb_de=f"Urlaubsantrag aktualisiert für {leave_request.employee_id}.",
-                            verb_es=f"Solicitud de permiso actualizada para {leave_request.employee_id}.",
-                            verb_fr=f"Demande de congé mise à jour pour {leave_request.employee_id}.",
-                            icon="people-circle",
-                            redirect=reverse("request-view")
-                            + f"?id={leave_request.id}",
-                        )
-
-            else:
-                leave_request = form.save(commit=False)
-                save = True
-
-                if leave_request.leave_type_id.require_approval == "no":
-                    employee_id = leave_request.employee_id
-                    leave_type_id = leave_request.leave_type_id
-                    available_leave = AvailableLeave.objects.get(
-                        leave_type_id=leave_type_id, employee_id=employee_id
+                    leave_request.approved_available_days = (
+                        available_leave.available_days
                     )
-                    leave_request.created_by = self.request.user.employee_get
-                    leave_request.save()
-                    if leave_request.requested_days > available_leave.available_days:
-                        leave = (
-                            leave_request.requested_days
-                            - available_leave.available_days
-                        )
-                        leave_request.approved_available_days = (
-                            available_leave.available_days
-                        )
-                        available_leave.available_days = 0
-                        available_leave.carryforward_days = (
-                            available_leave.carryforward_days - leave
-                        )
-                        leave_request.approved_carryforward_days = leave
-                    else:
-                        available_leave.available_days = (
-                            available_leave.available_days
-                            - leave_request.requested_days
-                        )
-                        leave_request.approved_available_days = (
-                            leave_request.requested_days
-                        )
-                    leave_request.status = "approved"
-                    available_leave.save()
-                if save:
-                    leave_request.created_by = self.request.user.employee_get
-                    leave_request.save()
+                    available_leave.available_days = 0
+                    available_leave.carryforward_days -= leave
+                    leave_request.approved_carryforward_days = leave
+                else:
+                    available_leave.available_days -= leave_request.requested_days
+                    leave_request.approved_available_days = leave_request.requested_days
 
-                    if multiple_approvals_check(leave_request.id):
-                        conditional_requests = multiple_approvals_check(
-                            leave_request.id
-                        )
-                        managers = []
-                        for manager in conditional_requests["managers"]:
-                            managers.append(manager.employee_user_id)
-                        with contextlib.suppress(Exception):
-                            notify.send(
-                                self.request.user.employee_get,
-                                recipient=managers[0],
-                                verb="You have a new leave request to validate.",
-                                verb_ar="لديك طلب إجازة جديد يجب التحقق منه.",
-                                verb_de="Sie haben eine neue Urlaubsanfrage zur Validierung.",
-                                verb_es="Tiene una nueva solicitud de permiso que debe validar.",
-                                verb_fr="Vous avez une nouvelle demande de congé à valider.",
-                                icon="people-circle",
-                                redirect=f"/leave/request-view?id={leave_request.id}",
-                            )
+                leave_request.status = "approved"
+                available_leave.save()
 
-                    mail_thread = LeaveMailSendThread(
-                        self.request, leave_request, type="request"
-                    )
-                    mail_thread.start()
-                    messages.success(
-                        self.request, _("Leave request created successfully")
-                    )
-                    with contextlib.suppress(Exception):
-                        notify.send(
-                            self.request.user.employee_get,
-                            recipient=leave_request.employee_id.employee_work_info.reporting_manager_id.employee_user_id,
-                            verb=f"New leave request created for {leave_request.employee_id}.",
-                            verb_ar=f"تم إنشاء طلب إجازة جديد لـ {leave_request.employee_id}.",
-                            verb_de=f"Neuer Urlaubsantrag erstellt für {leave_request.employee_id}.",
-                            verb_es=f"Nueva solicitud de permiso creada para {leave_request.employee_id}.",
-                            verb_fr=f"Nouvelle demande de congé créée pour {leave_request.employee_id}.",
-                            icon="people-circle",
-                            redirect=reverse("request-view")
-                            + f"?id={leave_request.id}",
-                        )
+            leave_request.save()
 
-                leave_requests = LeaveRequest.objects.all()
-                if len(leave_requests) == 1:
-                    return HttpResponse("")
+            try:
+                notify.send(
+                    self.request.user.employee_get,
+                    recipient=leave_request.employee_id.employee_work_info.reporting_manager_id.employee_user_id,
+                    verb=f"Leave request {'updated' if leave_request.pk else 'created'} for {leave_request.employee_id}.",
+                    icon="people-circle",
+                    redirect=reverse("request-view") + f"?id={leave_request.id}",
+                )
+            except Exception:
+                pass
 
-            return self.HttpResponse("")
+            LeaveMailSendThread(self.request, leave_request, type="request").start()
+
+            messages.success(
+                self.request,
+                (
+                    _("Leave request updated successfully")
+                    if leave_request.pk
+                    else _("Leave request created successfully")
+                ),
+            )
+
+            success_url = reverse("request-view")
+
+            if self.request.META.get("HTTP_HX_REQUEST"):
+                response = HttpResponse("Success")
+                response["HX-Redirect"] = success_url
+                return response
+
+            return HttpResponseRedirect(success_url)
+
         return super().form_valid(form)
 
 

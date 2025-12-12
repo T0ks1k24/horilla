@@ -343,11 +343,11 @@ class Task(HorillaModel):
     task_members = models.ManyToManyField(
         Employee, blank=True, related_name="tasks", verbose_name=_("Task Members")
     )
+    story_point = models.IntegerField(default=0, verbose_name=_("Story Point"))
     status = models.CharField(
         choices=TASK_STATUS, max_length=250, default="to_do", verbose_name=_("Status")
     )
     description = models.TextField(verbose_name=_("Description"))
-    story_point = models.IntegerField(default=0, verbose_name=_("Story Point"))
     sequence = models.IntegerField(default=0)
     objects = HorillaCompanyManager("project__company_id")
 

@@ -24,23 +24,24 @@
 	</a>
 {% endif %}
 
-<button
-	data-toggle="oh-modal-toggle"
-	data-target="#penaltyModal"
-	hx-target="#penaltyModalBody"
-	hx-get="{% url 'leave-cut-penalty' instance.id %}"
-	type="submit"
-	class="oh-btn oh-btn--info"
-	title="{% trans 'Penalty' %}"
-	id="penaltyButton"
+<a
+    href="#" 
+    data-toggle="oh-modal-toggle"
+    data-target="#penaltyModal"
+    hx-target="#penaltyModalBody"
+    hx-get="{% url 'leave-cut-penalty' instance.id %}"
+    class="oh-btn oh-btn--info"
+    title="{% trans 'Penalty' %}"
+    id="penaltyButton"
+    onclick="return false;"
 >
-	<ion-icon
-		name="information-circle-outline"
-		role="img"
-		class="md hydrated"
-		aria-label="information circle outline"
-	></ion-icon> {% trans 'Penalty' %}
-</button>
+    <ion-icon
+        name="information-circle-outline"
+        role="img"
+        class="md hydrated"
+        aria-label="information circle outline"
+    ></ion-icon> {% trans 'Penalty' %}
+</a>
 
 {% if instance.status != 'rejected' and instance.end_date >= current_date %}
 	<a

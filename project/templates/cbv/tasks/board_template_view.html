@@ -47,16 +47,14 @@
             </div> 
             
             <div>
-                <a class="oh-btn oh-btn--secondary oh-btn--shadow"
-   title="{% trans 'Create task' %}"
+                <a class="oh-btn oh-btn--secondary"
    hx-get="{% url 'create-task' selected_project_id %}"
    hx-target="#genericModalBody"
-   hx-trigger="click"
    data-toggle="oh-modal-toggle"
    data-target="#genericModal">
-    <ion-icon class="me-2" name="add-outline"></ion-icon>
-    {% trans "Create" %}
+    Create Task
 </a>
+
 
             </div>
         </div> 
