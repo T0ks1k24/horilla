@@ -54,9 +54,9 @@
                     <i
                         class="fas fa-bell transition duration-300 group-hover:text-white"
                     ></i>
-                    <span class="absolute bg-[#d7391d] w-7 h-7 rounded-full text-xs text-slate-200 font-semibold flex items-center justify-center border-2 border-white p-1 [right:-10px] [top:-7px]">
+                    {% comment %} <span class="absolute bg-[#d7391d] w-7 h-7 rounded-full text-xs text-slate-200 font-semibold flex items-center justify-center border-2 border-white p-1 [right:-10px] [top:-7px]">
                         {% live_notify_badge %}
-                    </span>
+                    </span> {% endcomment %}
                 </button>
                 {% include "notification/notification.html" %}
             </div>

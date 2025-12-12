@@ -1166,8 +1166,13 @@ def task_all_create(request):
 
 @login_required
 def update_project_task_status(request, task_id):
-    status = request.POST.get("status")
+    # Перевірка методу
+    if request.method != "POST":
+        return JsonResponse(
+            {"type": "error", "message": "Invalid request method"}, status=405
+        )
 
+    status = request.POST.get("status")
     if not status:
         return JsonResponse(
             {"type": "error", "message": "Missing 'status' parameter"}, status=400
@@ -1175,7 +1180,7 @@ def update_project_task_status(request, task_id):
 
     task = get_object_or_404(Task, id=task_id)
     task.status = status
-    task.save()
+    task.save(update_fields=["status"])
 
     return JsonResponse(
         {"type": "success", "message": "Task status updated successfully"}

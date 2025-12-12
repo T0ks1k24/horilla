@@ -1,5 +1,5 @@
 # Build stage - for compiling dependencies
-FROM python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -7,19 +7,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Install build dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        build-essential \
-        libpq-dev \
-        libjpeg-dev \
-        zlib1g-dev \
-        libcairo2-dev \
-        libpango1.0-dev \
-        libgdk-pixbuf-xlib-2.0-dev \
-        libxml2-dev \
-        libxslt1-dev \
-        libffi-dev \
-        pkg-config \
-        gcc \
-        g++ \
+    build-essential \
+    libpq-dev \
+    libjpeg-dev \
+    zlib1g-dev \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libgdk-pixbuf-xlib-2.0-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    libffi-dev \
+    pkg-config \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Create virtual environment
@@ -32,7 +32,7 @@ RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt gunicorn psycopg2-binary
 
 # Production stage - minimal runtime image
-FROM python:3.12-slim as production
+FROM python:3.12-slim AS production
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -41,17 +41,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Install only runtime dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        libpq5 \
-        libjpeg62-turbo \
-        zlib1g \
-        libcairo2 \
-        libpango-1.0-0 \
-        libgdk-pixbuf-xlib-2.0-0 \
-        libxml2 \
-        libxslt1.1 \
-        libffi8 \
-        curl \
-        netcat-openbsd \
+    libpq5 \
+    libjpeg62-turbo \
+    zlib1g \
+    libcairo2 \
+    libpango-1.0-0 \
+    libgdk-pixbuf-xlib-2.0-0 \
+    libxml2 \
+    libxslt1.1 \
+    libffi8 \
+    curl \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 

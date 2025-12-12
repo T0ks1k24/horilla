@@ -62,50 +62,45 @@ class BoardTemplateView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # 1. Додаємо налаштування колонок для шаблону (HTML циклу)
-        context["kanban_columns"] = [
-            {
-                "status": "ongoing",
-                "label": "Ongoing",
-                "icon": "fas fa-sync",
-                "color": "#ff9800",
-            },
-            {
-                "status": "to_do",
-                "label": "To Do",
-                "icon": "fas fa-circle",
-                "color": "#ff5630",
-            },
-            {
-                "status": "in_progress",
+        # --- 1. Канбан-колонки (використовуємо в index.html)
+        context["column_map"] = {
+            "ongoing": {"label": "Ongoing", "icon": "fas fa-sync", "color": "#ff9800"},
+            "to_do": {"label": "To Do", "icon": "fas fa-circle", "color": "#ff5630"},
+            "in_progress": {
                 "label": "In Progress",
                 "icon": "fas fa-spinner fa-spin",
                 "color": "#0052cc",
             },
-            {
-                "status": "code_review",
+            "code_review": {
                 "label": "Code Review",
                 "icon": "fas fa-glasses",
                 "color": "#6554c0",
             },
-            {
-                "status": "completed",
+            "completed": {
                 "label": "Done",
                 "icon": "fas fa-check-circle",
                 "color": "#36b37e",
             },
-        ]
+        }
 
-        if not hasattr(self.request.user, "employee_get"):
+        # --- 2. Якщо користувач не має employee_get → просто рендеримо пустий борд
+        user = self.request.user
+        if not hasattr(user, "employee_get"):
+            context["projects"] = []
+            context["tasks"] = []
+            context["selected_project_id"] = None
             return context
 
-        employee = self.request.user.employee_get
+        employee = user.employee_get
 
+        # --- 3. Проекти, в яких він менеджер або учасник
         allowed_projects = Project.objects.filter(
             Q(managers=employee) | Q(members=employee)
         ).distinct()
 
         context["projects"] = allowed_projects
+
+        # --- 4. Вибір проекта (з GET або з session)
         project_id = self.request.GET.get("project_id")
 
         if project_id:
@@ -114,23 +109,24 @@ class BoardTemplateView(TemplateView):
             project_id = self.request.session.get("last_board_project_id")
 
         selected_project = None
-
         if project_id:
             try:
                 selected_project = allowed_projects.filter(id=int(project_id)).first()
             except (ValueError, TypeError):
                 selected_project = None
 
+        # Якщо проект не знайдений → беремо перший доступний
         if not selected_project and allowed_projects.exists():
             selected_project = allowed_projects.first()
-            if selected_project:
-                self.request.session["last_board_project_id"] = str(selected_project.id)
+            self.request.session["last_board_project_id"] = str(selected_project.id)
 
-        context["selected_project_id"] = None
+        # --- 5. Базові змінні контексту
         context["tasks"] = []
+        context["selected_project_id"] = None
+        context["selected_project_title"] = None
 
+        # --- 6. Якщо є вибраний проект → підвантажуємо задачі
         if selected_project:
-            # Тут можна додати сортування, якщо потрібно, наприклад .order_by('-created_at')
             context["tasks"] = Task.objects.filter(project=selected_project)
             context["selected_project_id"] = selected_project.id
             context["selected_project_title"] = selected_project.title
