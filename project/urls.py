@@ -166,6 +166,11 @@ urlpatterns = [
     # path(
     #     "update-task-all/<int:task_id>/", views.update_task_all, name="update-task-all"
     # ),
+    path(
+        "time_logger/<int:task_id>/start/", views.start_timer, name="time_logger_start"
+    ),
+    path("time_logger/<int:task_id>/stop/", views.stop_timer, name="time_logger_stop"),
+    path("time_logger/<int:pk>/update/", views.update_timer, name="time_logger_update"),
     path("task-all-filter/", views.task_all_filter, name="task-all-filter"),
     path(
         "task-all-bulk-archive",

@@ -7,6 +7,7 @@
 <meta name="csrf-token" content="{{ csrf_token }}">
 
 {% include "generic/components.html" %}
+{% include "time_logger/task_context_menu.html" %}
 
 <div class="oh-wrapper">
 
@@ -150,9 +151,20 @@
     </div>
 </div>
 
+<div id="timeLoggerModal" style="display:none;">
+    <div class="modal-content">
+        <span id="closeModal" style="cursor:pointer;">&times;</span>
+        <div id="timeLoggerModalBody"></div>
+    </div>
+</div>
+
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <script src="{% static 'board/kanban.js' %}"></script>
 <script src="{% static '/task_all/task_all_action.js' %}"></script>
 <script src="{% static 'cbv/deleteFunc.js' %}"></script>
+<script src="{% static 'time_logger/task_context_menu.js' %}"></script>
+
+
 
 {% endblock %}

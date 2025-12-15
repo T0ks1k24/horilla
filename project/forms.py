@@ -343,3 +343,15 @@ class TaskTimeSheetForm(ModelForm):
         )
 
         self.fields["stage"].widget.attrs.update({"id": "project_stage"})
+
+
+class TimeLoggerDescriptionForm(forms.ModelForm):
+    class Meta:
+        model = TimeLogger
+        fields = ["description"]
+        widgets = {
+            "description": forms.Textarea(attrs={"placeholder": "Enter description"}),
+        }
+        labels = {
+            "description": "Description",
+        }

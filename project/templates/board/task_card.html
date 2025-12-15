@@ -1,9 +1,9 @@
 <div class="kanban-card status-{{ task.status }}" 
      data-task-id="{{ task.id }}" 
+     {% if task.time_logger.start_time %}data-start-time="{{ task.time_logger.start_time|date:'c' }}"{% endif %}
      data-created-at="{{ task.created_at|date:'U' }}" 
      data-toggle="oh-modal-toggle" 
      data-target="#genericModal" 
-     
      hx-get="{% url 'task-detail-view' task.id %}?view=list"
      hx-target="#genericModalBody"
      hx-trigger="click">
@@ -44,7 +44,27 @@
             {% endfor %}
         </div>
     </div>
+      
+    {% with logger=task.timelogger_set.last %}
+    {% if logger.start_time %}
+        data-start-time="{{ logger.start_time|date:'c' }}"
+    {% endif %}
+    ...
+    <div class="task-timer">
+        {% if logger.time_spent %}
+            {% with mins=logger.time_spent.total_seconds|divisibleby:60 %}
+                {% with secs=logger.time_spent.total_seconds|mod:60 %}
+                    {{ mins|stringformat:"02d" }}:{{ secs|stringformat:"02d" }}
+                {% endwith %}
+            {% endwith %}
+        {% else %}
+            00:00
+        {% endif %}
+    </div>
+{% endwith %}
+
 </div>
+
 
 
 <style>

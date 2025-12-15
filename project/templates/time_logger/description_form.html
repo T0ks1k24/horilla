@@ -1,0 +1,10 @@
+<div id="timeLoggerModal" style="display:none;">
+    <form id="timeLoggerForm">
+        {% csrf_token %}
+        <label>Time Logged:</label>
+        <input type="text" id="timeSpentInput" value="" readonly>
+        <textarea name="description" placeholder="Enter description"></textarea>
+        <button type="submit">Apply</button>
+        <button type="button" id="closeModal">Cancel</button>
+    </form>
+</div>

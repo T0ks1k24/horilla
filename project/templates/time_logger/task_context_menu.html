@@ -1,0 +1,40 @@
+<div id="taskContextMenu"
+     style="position:absolute; display:none; background:#fff; border:1px solid #ccc; z-index:9999; min-width:150px;">
+    <ul style="list-style:none; margin:0; padding:5px;">
+        <li>
+            <button type="button"
+                    class="context-btn"
+                    data-action="start"
+                    style="width:100%;">
+                Start Timer
+            </button>
+        </li>
+        <li>
+            <button type="button"
+                    class="context-btn"
+                    data-action="stop"
+                    style="width:100%;">
+                Stop Timer
+            </button>
+        </li>
+    </ul>
+</div>
+
+<style>
+#taskContextMenu {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-radius: 6px;
+}
+
+#taskContextMenu button {
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+#taskContextMenu button:hover {
+  background: #f0f0f0;
+}
+</style>

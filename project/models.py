@@ -628,3 +628,39 @@ class TimeSheet(HorillaModel):
     class Meta:
         verbose_name = _("Time Sheet")
         verbose_name_plural = _("Time Sheets")
+
+
+class TimeLogger(HorillaModel):
+    employee_id = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        verbose_name=_("Employee"),
+    )
+    project = models.ForeignKey(
+        "Project", on_delete=models.CASCADE, null=True, blank=True
+    )
+    task = models.ForeignKey("Task", on_delete=models.CASCADE, null=True, blank=True)
+
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    time_spent = models.DurationField(null=True, blank=True)
+    description = models.TextField(blank=True, null=True)
+
+    STATUS_CHOICES = [
+        ("in_progress", "In Progress"),
+        ("completed", "Completed"),
+    ]
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default="in_progress"
+    )
+
+    def stop(self):
+        if not self.start_time:
+            raise ValidationError("Timer has not been started yet.")
+        self.end_time = timezone.now()
+        self.time_spent = self.end_time - self.start_time
+        self.status = "completed"
+        self.save()
+
+    def __str__(self):
+        return f"{self.employee_id} | {self.task} | {self.time_spent or 'not logged'}"

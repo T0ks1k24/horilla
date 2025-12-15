@@ -23,6 +23,7 @@ from notifications.signals import notify
 from project.cbv.projects import DynamicProjectCreationFormView
 from project.cbv.tasks import DynamicTaskCreateFormView
 from project.cbv.timesheet import TimeSheetFormView
+from project.forms import TimeLoggerDescriptionForm
 from project.methods import (
     generate_colors,
     paginator_qry,
@@ -1985,3 +1986,56 @@ def time_sheet_bulk_delete(request):
                 _("You cannot delete %(timesheet)s.") % {"timesheet": timesheet},
             )
     return JsonResponse({"message": "Success"})
+
+
+@login_required
+def start_timer(request, task_id):
+    logger, created = TimeLogger.objects.get_or_create(
+        task_id=task_id, employee_id=request.user.employee_get
+    )
+    if not logger.start_time:  # старт тільки один раз
+        logger.start_time = timezone.now()
+        logger.status = "in_progress"
+        logger.save()
+    return JsonResponse(
+        {"status": "started", "start_time": logger.start_time.isoformat()}
+    )
+
+
+@login_required
+def stop_timer(request, task_id):
+    try:
+        logger = TimeLogger.objects.get(
+            task_id=task_id, employee_id=request.user.employee_get
+        )
+    except TimeLogger.DoesNotExist:
+        return JsonResponse({"error": "No TimeLogger matches the given query."})
+
+    logger.end_time = timezone.now()
+    logger.time_spent = logger.end_time - logger.start_time
+    logger.status = "completed"
+    logger.save()
+
+    mins, secs = divmod(int(logger.time_spent.total_seconds()), 60)
+    time_str = f"{mins:02d}:{secs:02d}"
+
+    return JsonResponse({"status": "stopped", "time_spent": time_str, "pk": logger.pk})
+
+
+@login_required
+def update_timer(request, pk):
+    logger = get_object_or_404(TimeLogger, pk=pk)
+
+    if request.method == "POST":
+        form = TimeLoggerDescriptionForm(request.POST, instance=logger)
+        if form.is_valid():
+            form.save()
+            return redirect("task-all-board")  # або правильний URL
+        else:
+            print(form.errors)  # <- додай, щоб бачити помилки форми
+    else:
+        form = TimeLoggerDescriptionForm(instance=logger)
+
+    return render(
+        request, "time_logger/description_form.html", {"form": form, "logger": logger}
+    )
