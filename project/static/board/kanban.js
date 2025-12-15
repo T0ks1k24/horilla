@@ -54,7 +54,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (oldStatus === newStatus && evt.oldIndex === evt.newIndex) return;
 
         if (!isMoveAllowed(oldStatus, newStatus)) {
-          alert("Move not allowed!");
           if (evt.from !== evt.to) {
             evt.from.insertBefore(item, evt.from.children[evt.oldIndex]);
           }

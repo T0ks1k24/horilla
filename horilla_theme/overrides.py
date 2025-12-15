@@ -95,16 +95,17 @@ def penalities_column(self):
         return format_html(
             '<div class="bg-red-100/10 border-2 border-red-300 rounded-xl px-4 py-2 w-32 text-xs text-center text-red-700 font-semibold" '
             'data-target="#penaltyViewModal" data-toggle="oh-modal-toggle" '
-            'onclick="event.stopPropagation();"'
+            'onclick="event.stopPropagation();" '
             'hx-get="{}" hx-target="#penaltyViewModalBody" align="center">'
-            "Penalties :{}</div>",
+            "Penalties: {}</div>",
             url,
             penalties_count,
         )
     else:
         return format_html(
-            '<div class="bg-green-100/10 border-2 border-green-300 rounded-xl px-4 py-2 w-32 text-xs text-center text-green-700 font-semibold">'
-            "No Penalties</div>"
+            '<div class="bg-green-100/10 border-2 border-green-300 rounded-xl px-4 py-2 w-32 text-xs text-center text-green-700 font-semibold">{}'
+            "</div>",
+            "No Penalties",
         )
 
 
