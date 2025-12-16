@@ -176,3 +176,32 @@ def is_image_file(filename):
     Django template filter to check if a given filename is an image file.
     """
     return filename.lower().endswith((".png", ".jpg", ".jpeg", ".svg"))
+
+
+@register.filter(name="getattribute")
+def getattribute(value, attr: str):
+    """
+    Gets an attribute of an object dynamically from a string name
+    """
+    result = ""
+    attrs = attr.split("__")
+    for attr in attrs:
+        if isinstance(value, AltersData) and hasattr(value, "through"):
+            result = []
+            queryset = value.all()
+            for record in queryset:
+                result.append(getattribute(record, attr))
+        elif hasattr(value, str(attr)):
+            result = getattr(value, attr)
+            if isinstance(result, (types.MethodType, functools.partial)):
+                # Патч: передаємо request якщо метод його очікує
+                try:
+                    result = result(request=getattr(_thread_locals, "request", None))
+                except TypeError:
+                    # якщо метод не очікує request
+                    result = result()
+            value = result
+        else:
+            return getattr(value, attr, "")
+
+    return result

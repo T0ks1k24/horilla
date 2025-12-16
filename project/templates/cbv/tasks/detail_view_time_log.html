@@ -1,0 +1,160 @@
+{% load i18n %}
+
+{% if time_logs %}
+<div class="mt-4 time-logs-container">
+    <h5 class="mb-3 title-logs">
+        <ion-icon name="time-outline" style="vertical-align: middle;"></ion-icon> 
+        {% trans "Time logs" %}
+    </h5>
+
+    <div class="table-responsive custom-scrollbar">
+        <table class="oh-table oh-table--bordered w-100">
+            <thead>
+                <tr>
+                    <th>{% trans "Employee" %}</th>
+                    <th>{% trans "Date" %}</th>
+                    <th>{% trans "From" %}</th>
+                    <th>{% trans "To" %}</th>
+                    <th class="text-center">{% trans "Duration (min)" %}</th>
+                    <th>{% trans "Description" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in time_logs %}
+                <tr>
+                    <td class="font-weight-bold text-primary">{{ log.employee }}</td>
+                    <td>{{ log.start_time|date:"Y-m-d" }}</td>
+                    <td>{{ log.start_time|date:"H:i" }}</td>
+                    <td>
+                        {% if log.end_time %}
+                            {{ log.end_time|date:"H:i" }}
+                        {% else %}
+                            <span class="badge badge-running">
+                                <ion-icon name="ellipse"></ion-icon>
+                                {% trans "Running" %}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center font-weight-bold">
+                        {% if log.end_time and log.duration_seconds %}
+                            {% widthratio log.duration_seconds 60 1 %} m
+                        {% else %}
+                            <span class="text-muted">...</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small-text">
+                        {{ log.description|default:"—"|truncatechars:30 }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<style>
+/* Заголовки */
+.title-logs {
+    font-weight: 600;
+    color: #343a40;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 10px;
+}
+
+/* Основна таблиця */
+.oh-table {
+    border-collapse: separate; 
+    border-spacing: 0;
+    width: 100%;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px; /* Закруглені кути таблиці */
+    overflow: hidden;
+    font-size: 14px;
+}
+
+/* Шапка таблиці */
+.oh-table thead th {
+    background-color: #f8f9fa; /* Світло-сірий фон */
+    color: #495057;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    padding: 12px 15px;
+    border-bottom: 2px solid #dee2e6;
+    border-top: none;
+}
+
+/* Рядки таблиці */
+.oh-table tbody td {
+    padding: 12px 15px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e9ecef;
+    color: #212529;
+}
+
+/* Останній рядок без бордера */
+.oh-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Ефект наведення на рядок */
+.oh-table tbody tr:hover {
+    background-color: #f1f3f5;
+    transition: background-color 0.2s ease-in-out;
+}
+
+/* Стиль для статусу Running */
+.badge-running {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #856404;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 50px; /* Овальна форма */
+    animation: pulse 2s infinite;
+}
+
+.badge-running ion-icon {
+    font-size: 8px;
+    color: #856404;
+}
+
+/* Додаткові стилі тексту */
+.text-primary {
+    color: #007bff;
+}
+
+.small-text {
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+/* Анімація для Running */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
+
+/* Кастомний скролбар (якщо таблиця довга) */
+.custom-scrollbar::-webkit-scrollbar {
+    height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #ccc; 
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #aaa; 
+}
+</style>

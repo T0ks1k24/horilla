@@ -19,6 +19,7 @@ from django.utils.translation import gettext_lazy as _
 from base.horilla_company_manager import HorillaCompanyManager
 from base.models import Company
 from employee.models import Employee
+from attendance.models import Attendance
 from horilla import horilla_middlewares
 from horilla.horilla_middlewares import _thread_locals
 from horilla.models import HorillaModel, upload_path
@@ -364,6 +365,44 @@ class Task(HorillaModel):
     def __str__(self):
         return f"{self.title}"
 
+    def detail_view_actions(self, request=None):
+        employee = getattr(request.user, "employee_get", None)
+        if not employee:
+            return render_template(
+                path="cbv/tasks/task_detail_actions.html",
+                context={
+                    "instance": self,
+                    "request": request,
+                    "is_member": False,
+                    "active_log": None,
+                },
+            )
+
+        is_member = self.task_members.filter(id=employee.id).exists()
+        active_log = self.time_logs.filter(employee=employee, is_active=True).first()
+
+        return render_template(
+            path="cbv/tasks/task_detail_actions.html",
+            context={
+                "instance": self,
+                "request": request,
+                "is_member": is_member,
+                "active_log": active_log,
+            },
+        )
+
+    def detail_view_time_log(self, request=None):
+        time_logs = self.time_logs.select_related("employee").order_by("-start_time")
+
+        return render_template(
+            path="cbv/tasks/detail_view_time_log.html",
+            context={
+                "instance": self,
+                "time_logs": time_logs,
+                "request": request,
+            },
+        )
+
     def if_project(self):
         """
         Return project if have,otherwise return none
@@ -447,16 +486,6 @@ class Task(HorillaModel):
         url = f"https://ui-avatars.com/api/?name={self.title}&background=random"
         return url
 
-    def detail_view_actions(self):
-        """
-        This method for get detail view actions.
-        """
-
-        return render_template(
-            path="cbv/tasks/task_detail_actions.html",
-            context={"instance": self},
-        )
-
     def get_update_url(self):
         """
         to get the update url
@@ -490,6 +519,12 @@ class Task(HorillaModel):
         url_with_params = f"{url}?task_all=true"
         message = _("Are you sure you want to delete this task?")
         return f"'{url_with_params}'" + "," + f"'{message}'"
+
+    def get_active_log_for_employee(self, employee):
+        """Повертає активний таймлог для цього таску для конкретного employee"""
+        if not employee:
+            return None
+        return self.time_logs.filter(employee=employee, is_active=True).first()
 
 
 class TimeSheet(HorillaModel):
@@ -628,3 +663,31 @@ class TimeSheet(HorillaModel):
     class Meta:
         verbose_name = _("Time Sheet")
         verbose_name_plural = _("Time Sheets")
+
+
+class TaskTimeLog(HorillaModel):
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, verbose_name=_("Employee")
+    )
+
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="time_logs")
+
+    attendance = models.ForeignKey(Attendance, on_delete=models.CASCADE)
+
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+
+    duration_seconds = models.PositiveIntegerField(default=0)
+
+    description = models.TextField(blank=True)
+
+    is_active = models.BooleanField(default=True)
+
+    objects = HorillaCompanyManager("task__project__company_id")
+
+    class Meta:
+        verbose_name = _("Task Time Log")
+        verbose_name_plural = _("Task Time Logs")
+        indexes = [
+            models.Index(fields=["employee", "is_active"]),
+        ]

@@ -7,7 +7,13 @@ from django.shortcuts import render
 
 from base.methods import get_pagination, get_subordinates
 from employee.models import Employee
-from project.models import Project, Task, TimeSheet
+from attendance.models import Attendance
+from project.models import Project, Task, TimeSheet, TaskTimeLog
+
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.utils import timezone
+
 
 decorator_with_arguments = (
     lambda decorator: lambda *args, **kwargs: lambda func: decorator(
@@ -237,3 +243,68 @@ def you_dont_have_permission(request):
         return render(request, "decorator_404.html")
     script = f'<script>window.location.href = "{previous_url}"</script>'
     return HttpResponse(script)
+
+
+def _validate_task_access(employee, task):
+    if not task.task_members.filter(id=employee.id).exists():
+        raise ValidationError(_("You are not a member of this task"))
+
+    if hasattr(task.project, "members"):
+        if not task.project.members.filter(id=employee.id).exists():
+            raise ValidationError(_("You are not a project member"))
+
+
+@transaction.atomic
+def start_task_timer(employee, task_id):
+    task = Task.objects.get(id=task_id)
+
+    # Перевірка доступу до задачі
+    _validate_task_access(employee, task)
+
+    # Отримуємо останній активний запис attendance
+    attendance = (
+        Attendance.objects.filter(employee_id=employee, is_active=True)
+        .order_by("-attendance_date")  # або '-id', щоб взяти останній
+        .first()
+    )
+    if not attendance:
+        raise ValidationError("Check in first")
+
+    if attendance.attendance_clock_out is not None:
+        raise ValidationError("You cannot start a task because you already clocked out")
+
+    # Перевірка, чи є вже активний task log
+    if TaskTimeLog.objects.filter(employee_id=employee, is_active=True).exists():
+        raise ValidationError("You already have a running task")
+
+    # Створюємо TaskTimeLog
+    return TaskTimeLog.objects.create(
+        employee_id=employee.id,
+        task=task,
+        attendance=attendance,
+        start_time=timezone.now(),
+        is_active=True,
+    )
+
+
+@transaction.atomic
+def stop_task_timer(employee, description=""):
+    log = TaskTimeLog.objects.filter(employee_id=employee.id, is_active=True).first()
+
+    if not log:
+        raise ValidationError(_("No active task"))
+
+    end_time = timezone.now()
+    duration = int((end_time - log.start_time).total_seconds())
+
+    if duration < 60:
+        log.delete()
+        return None  # <- важливо
+
+    log.end_time = end_time
+    log.duration_seconds = duration
+    log.description = description
+    log.is_active = False
+    log.save()
+
+    return log

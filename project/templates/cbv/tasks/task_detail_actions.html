@@ -1,32 +1,124 @@
 {% load i18n %}
-<div class="oh-btn-group w-100">
-{% if request.user|task_crud_perm:instance or perms.project.view_task %}
-    <a hx-get="{% url 'update-task' instance.id %}?project_task=true" hx-target='#genericModalBody'
-        data-toggle="oh-modal-toggle" data-target="#genericModal" data-key=".oh-kanban__section"
-        class="oh-btn oh-btn-group oh-btn--info flex-fill"
-    >
-        <ion-icon name="create-outline" role="img" class="md hydrated" aria-label="create outline">
-        </ion-icon>
-        {% trans "Edit" %}
-    </a>
-{% endif %}
 
-    {% comment %} <a hx-get="{% url 'task-timesheet' instance.id %}?employee_id={{request.user.employee_get.id}}"
-        hx-target='#TaskTimesheetTarget' data-target="#TaskTimesheetModal" data-toggle="oh-modal-toggle"
-        data-key=".oh-kanban__section"
-        class="oh-btn oh-btn--info flex-fill"
-        style="background-color:green"
-    >
-        <ion-icon name="bar-chart" role="img" class="md hydrated" aria-label="create outline">
-        </ion-icon>
-        {% trans "Time sheet" %}
-    </a> {% endcomment %}
+<div id="task-timer-{{ instance.id }}">
+    
+    <div class="oh-btn-group-custom">
+        
+        {% if is_member %}
+            {% if active_log %}
+                <form method="post"
+                    action="{% url 'task-timer-stop' active_log.id %}" 
+                    hx-post="{% url 'task-timer-stop' active_log.id %}"
+                    hx-target="#task-timer-{{ instance.id }}"
+                    hx-swap="outerHTML"
+                    id="timer-form-{{ instance.id }}"
+                    class="btn-wrapper">
+                    {% csrf_token %}
+                    <button type="submit" class="oh-btn oh-btn--danger w-100 h-100">
+                        <ion-icon name="stop-circle-outline"></ion-icon>
+                        {% trans "Stop" %}
+                    </button>
+                </form>
+            {% else %}
+                <form method="post"
+                    action="{% url 'task-timer-start' instance.id %}"
+                    hx-post="{% url 'task-timer-start' instance.id %}"
+                    hx-target="#task-timer-{{ instance.id }}"
+                    hx-swap="outerHTML"
+                    class="btn-wrapper">
+                    {% csrf_token %}
+                    <button type="submit" 
+                        class="oh-btn oh-btn--success w-100 h-100"
+                        {% if last_attendance and last_attendance.attendance_clock_out %}
+                            disabled title="{% trans 'Cannot start task, you already clocked out' %}"
+                        {% endif %}>
+                        <ion-icon name="play-circle-outline"></ion-icon>
+                        {% trans "Start" %}
+                    </button>
+                </form>
+            {% endif %}
+        {% endif %}
 
-{% if request.user|task_crud_perm:instance or perms.project.view_task %}
-    <a href="{% url 'delete-task' instance.id %}?view={{request.GET.view }}" class="oh-btn oh-btn-group oh-btn--danger flex-fill"
-        onclick="event.preventDefault();event.stopPropagation(); confirm(`{% trans 'Do you want to delete this task?' %}`)">
-        <ion-icon name="trash-outline" role="img" class="md hydrated" aria-label="create outline"></ion-icon>
-        {% trans "Delete" %}
-    </a>
-{% endif %}
+        {% if request.user|task_crud_perm:instance or perms.project.view_task %}
+            <a hx-get="{% url 'update-task' instance.id %}?project_task=true"
+               hx-target="#genericModalBody"
+               data-toggle="oh-modal-toggle"
+               data-target="#genericModal"
+               class="oh-btn oh-btn--info w-100 btn-wrapper d-flex align-items-center justify-content-center">
+                <ion-icon name="create-outline"></ion-icon>
+                {% trans "Edit" %}
+            </a>
+
+            <a href="{% url 'delete-task' instance.id %}?view={{ request.GET.view }}"
+               class="oh-btn oh-btn--danger w-100 btn-wrapper d-flex align-items-center justify-content-center"
+               onclick="event.preventDefault();event.stopPropagation(); confirm(`{% trans 'Do you want to delete this task?' %}`)">
+                <ion-icon name="trash-outline"></ion-icon>
+                {% trans "Delete" %}
+            </a>
+        {% endif %}
+    </div>
+
+    {% if is_member and active_log %}
+        <div class="mt-2">
+            <textarea name="description" 
+                    form="timer-form-{{ instance.id }}" 
+                    class="oh-task-timer-textarea" 
+                    placeholder="{% trans 'What did you do?' %}" 
+                    required>{{ active_log.description }}</textarea>
+        </div>
+    {% endif %}
+    <div
+        hx-get="{% url 'task-detail-time-log' instance.id %}"
+        hx-trigger="load"
+        hx-target="this"
+        hx-swap="outerHTML">
+    </div>
 </div>
+
+<style>
+/* Контейнер для кнопок: Flexbox */
+.oh-btn-group-custom {
+    display: flex;
+    gap: 10px; /* Простір між кнопками */
+    width: 100%;
+    margin-bottom: 0; /* Відступ знизу контролюється блоком textarea */
+}
+
+/* Кожен елемент (форма або посилання) займає рівну ширину */
+.btn-wrapper {
+    flex: 1;      
+    min-width: 0;
+}
+
+/* Стиль самих кнопок */
+.oh-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 40px; /* Фіксована висота */
+    padding: 0 10px;
+    white-space: nowrap;
+    border-radius: 5px;
+    width: 100%; /* Розтягуємо кнопку на всю ширину обгортки */
+}
+
+/* Стиль для textarea */
+.oh-task-timer-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    resize: vertical;
+    margin-top: 10px; /* Відступ від кнопок */
+}
+
+.oh-task-timer-textarea:focus {
+    outline: none;
+    border-color: #80bdff;
+    background-color: #fff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+</style>

@@ -2,6 +2,7 @@ from django.urls import path
 
 from project.cbv import dashboard, project_stage, projects, tasks, timesheet
 from project.models import Project
+from django.http import HttpResponse
 
 from . import views
 
@@ -160,6 +161,23 @@ urlpatterns = [
         "update-project-task-status/<int:task_id>/",
         views.update_project_task_status,
         name="update-project-task-status",
+    ),
+    path(
+        "task/<int:task_id>/timer/start/",
+        tasks.TaskStartTimerView.as_view(),
+        name="task-timer-start",
+    ),
+    path(
+        "task/<int:log_id>/timer/stop/",
+        tasks.TaskStopTimerView.as_view(),
+        name="task-timer-stop",
+    ),
+    path(
+        "project/task/<int:pk>/time-log/",
+        lambda request, pk: HttpResponse(
+            tasks.Task.objects.get(pk=pk).detail_view_time_log(request)
+        ),
+        name="task-detail-time-log",
     ),
     # path("task-all", views.task_all, name="task-all"),
     # path("create-task-all", views.task_all_create, name="create-task-all"),

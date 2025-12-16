@@ -30,8 +30,16 @@ from project.cbv.projects import DynamicProjectCreationFormView
 from project.filters import TaskAllFilter
 from project.forms import TaskAllForm
 from project.methods import you_dont_have_permission
-from project.models import Project, ProjectStage, Task
+from project.models import Project, ProjectStage, Task, TaskTimeLog
 from project.templatetags.taskfilters import task_crud_perm
+from django.views import View
+from django.shortcuts import redirect
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
+
+from project.methods import start_task_timer, stop_task_timer
+
 
 logger = logging.getLogger(__name__)
 
@@ -462,10 +470,6 @@ class DynamicTaskCreateFormView(TaskCreateForm):
 
 @method_decorator(login_required, name="dispatch")
 class TaskDetailView(HorillaDetailedView):
-    """
-    detail view of the task page
-    """
-
     model = Task
     title = _("Task Details")
     action_method = "detail_view_actions"
@@ -489,6 +493,44 @@ class TaskDetailView(HorillaDetailedView):
         "get_members": 12,
         "description": 12,
     }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        employee = self.request.user.employee_get
+
+        # Останнє активне відвідування
+        last_attendance = None
+        try:
+            # перевіряємо, чи цей користувач є членом task_members
+            if self.object.task_members.filter(id=employee.id).exists():
+                last_attendance = employee.attendance_set.filter(is_active=True).last()
+        except Exception:
+            last_attendance = None
+
+        # Активний лог задачі
+        active_log = self.object.time_logs.filter(
+            employee=employee, is_active=True
+        ).first()
+        is_member = self.object.task_members.filter(id=employee.id).exists()
+
+        context.update(
+            {
+                "last_attendance": last_attendance,
+                "active_log": active_log,
+                "is_member": is_member,
+            }
+        )
+        return context
+
+    def get_action_html(self):
+        if hasattr(self.object, "detail_view_actions"):
+            # передаємо вже підготовлений контекст
+            return self.object.detail_view_actions(
+                request=self.request,
+                last_attendance=self.get_context_data()["last_attendance"],
+                active_log=self.get_context_data()["active_log"],
+                is_member=self.get_context_data()["is_member"],
+            )
 
 
 @method_decorator(login_required, name="dispatch")
@@ -630,3 +672,62 @@ class TasksInIndividualView(TaskListView):
     row_status_indications = None
     bulk_select_option = False
     action_method = None
+
+
+class TaskStartTimerView(LoginRequiredMixin, View):
+    def post(self, request, task_id):
+        employee = request.user.employee_get
+        task = Task.objects.get(id=task_id)
+
+        try:
+            start_task_timer(employee, task_id)
+        except ValidationError as e:
+            # Можна передати повідомлення в шаблон
+            active_log = task.time_logs.filter(
+                employee=employee, is_active=True
+            ).first()
+            is_member = task.task_members.filter(id=employee.id).exists()
+            return render(
+                request,
+                "cbv/tasks/task_detail_actions.html",
+                {
+                    "instance": task,
+                    "active_log": active_log,
+                    "is_member": is_member,
+                    "error_message": str(e),
+                    "request": request,
+                },
+            )
+
+        # Якщо все ок
+        active_log = task.time_logs.filter(employee=employee, is_active=True).first()
+        is_member = task.task_members.filter(id=employee.id).exists()
+        return render(
+            request,
+            "cbv/tasks/task_detail_actions.html",
+            {
+                "instance": task,
+                "active_log": active_log,
+                "is_member": is_member,
+                "request": request,
+            },
+        )
+
+
+class TaskStopTimerView(LoginRequiredMixin, View):
+    def post(self, request, log_id):
+        employee = request.user.employee_get
+        stop_task_timer(employee, request.POST.get("description", ""))
+        task = TaskTimeLog.objects.get(id=log_id).task
+        active_log = task.time_logs.filter(employee=employee, is_active=True).first()
+        is_member = task.task_members.filter(id=employee.id).exists()
+        return render(
+            request,
+            "cbv/tasks/task_detail_actions.html",
+            {
+                "instance": task,
+                "active_log": active_log,
+                "is_member": is_member,
+                "request": request,
+            },
+        )

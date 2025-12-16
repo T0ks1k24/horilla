@@ -6,11 +6,13 @@ from django.apps import apps
 from django.db.models.signals import post_migrate, post_save, pre_delete
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
 from attendance.methods.utils import strtime_seconds
 from attendance.models import Attendance, AttendanceGeneralSetting, WorkRecords
 from base.models import Company, PenaltyAccounts
 from employee.models import Employee
+from project.models import TaskTimeLog
 from horilla.methods import get_horilla_model_class
 
 
@@ -217,3 +219,17 @@ def create_missing_work_records(sender, **kwargs):
                 print(
                     f"Error creating missing work records for employee {employee}: {e}"
                 )
+
+
+@receiver(post_save, sender=Attendance)
+def stop_task_timer_on_checkout(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+
+    old = Attendance.objects.get(pk=instance.pk)
+
+    if old.is_active and not instance.is_active:
+        TaskTimeLog.objects.filter(attendance=instance, is_active=True).update(
+            end_time=timezone.now(),
+            is_active=False,
+        )
