@@ -258,13 +258,11 @@ def _validate_task_access(employee, task):
 def start_task_timer(employee, task_id):
     task = Task.objects.get(id=task_id)
 
-    # Перевірка доступу до задачі
     _validate_task_access(employee, task)
 
-    # Отримуємо останній активний запис attendance
     attendance = (
         Attendance.objects.filter(employee_id=employee, is_active=True)
-        .order_by("-attendance_date")  # або '-id', щоб взяти останній
+        .order_by("-attendance_date")
         .first()
     )
     if not attendance:
@@ -273,11 +271,9 @@ def start_task_timer(employee, task_id):
     if attendance.attendance_clock_out is not None:
         raise ValidationError("You cannot start a task because you already clocked out")
 
-    # Перевірка, чи є вже активний task log
     if TaskTimeLog.objects.filter(employee_id=employee, is_active=True).exists():
         raise ValidationError("You already have a running task")
 
-    # Створюємо TaskTimeLog
     return TaskTimeLog.objects.create(
         employee_id=employee.id,
         task=task,
@@ -299,7 +295,7 @@ def stop_task_timer(employee, description=""):
 
     if duration < 60:
         log.delete()
-        return None  # <- важливо
+        return None
 
     log.end_time = end_time
     log.duration_seconds = duration

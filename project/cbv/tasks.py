@@ -70,7 +70,6 @@ class BoardTemplateView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # --- 1. Канбан-колонки (використовуємо в index.html)
         context["column_map"] = {
             "ongoing": {"label": "Ongoing", "icon": "fas fa-sync", "color": "#ff9800"},
             "to_do": {"label": "To Do", "icon": "fas fa-circle", "color": "#ff5630"},
@@ -91,7 +90,6 @@ class BoardTemplateView(TemplateView):
             },
         }
 
-        # --- 2. Якщо користувач не має employee_get → просто рендеримо пустий борд
         user = self.request.user
         if not hasattr(user, "employee_get"):
             context["projects"] = []
@@ -101,14 +99,12 @@ class BoardTemplateView(TemplateView):
 
         employee = user.employee_get
 
-        # --- 3. Проекти, в яких він менеджер або учасник
         allowed_projects = Project.objects.filter(
             Q(managers=employee) | Q(members=employee)
         ).distinct()
 
         context["projects"] = allowed_projects
 
-        # --- 4. Вибір проекта (з GET або з session)
         project_id = self.request.GET.get("project_id")
 
         if project_id:
@@ -123,17 +119,14 @@ class BoardTemplateView(TemplateView):
             except (ValueError, TypeError):
                 selected_project = None
 
-        # Якщо проект не знайдений → беремо перший доступний
         if not selected_project and allowed_projects.exists():
             selected_project = allowed_projects.first()
             self.request.session["last_board_project_id"] = str(selected_project.id)
 
-        # --- 5. Базові змінні контексту
         context["tasks"] = []
         context["selected_project_id"] = None
         context["selected_project_title"] = None
 
-        # --- 6. Якщо є вибраний проект → підвантажуємо задачі
         if selected_project:
             context["tasks"] = Task.objects.filter(project=selected_project)
             context["selected_project_id"] = selected_project.id
@@ -498,16 +491,13 @@ class TaskDetailView(HorillaDetailedView):
         context = super().get_context_data(**kwargs)
         employee = self.request.user.employee_get
 
-        # Останнє активне відвідування
         last_attendance = None
         try:
-            # перевіряємо, чи цей користувач є членом task_members
             if self.object.task_members.filter(id=employee.id).exists():
                 last_attendance = employee.attendance_set.filter(is_active=True).last()
         except Exception:
             last_attendance = None
 
-        # Активний лог задачі
         active_log = self.object.time_logs.filter(
             employee=employee, is_active=True
         ).first()
@@ -524,7 +514,6 @@ class TaskDetailView(HorillaDetailedView):
 
     def get_action_html(self):
         if hasattr(self.object, "detail_view_actions"):
-            # передаємо вже підготовлений контекст
             return self.object.detail_view_actions(
                 request=self.request,
                 last_attendance=self.get_context_data()["last_attendance"],
@@ -682,7 +671,6 @@ class TaskStartTimerView(LoginRequiredMixin, View):
         try:
             start_task_timer(employee, task_id)
         except ValidationError as e:
-            # Можна передати повідомлення в шаблон
             active_log = task.time_logs.filter(
                 employee=employee, is_active=True
             ).first()
@@ -699,7 +687,6 @@ class TaskStartTimerView(LoginRequiredMixin, View):
                 },
             )
 
-        # Якщо все ок
         active_log = task.time_logs.filter(employee=employee, is_active=True).first()
         is_member = task.task_members.filter(id=employee.id).exists()
         return render(

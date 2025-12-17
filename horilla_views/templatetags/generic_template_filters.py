@@ -194,11 +194,9 @@ def getattribute(value, attr: str):
         elif hasattr(value, str(attr)):
             result = getattr(value, attr)
             if isinstance(result, (types.MethodType, functools.partial)):
-                # Патч: передаємо request якщо метод його очікує
                 try:
                     result = result(request=getattr(_thread_locals, "request", None))
                 except TypeError:
-                    # якщо метод не очікує request
                     result = result()
             value = result
         else:
